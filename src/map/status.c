@@ -8380,8 +8380,6 @@ static int status_change_start_sub(struct block_list *src, struct block_list *bl
 			}
 
 			case SC_COMA: //Coma. Sends a char to 1HP. If val2, do not zap sp
-				if (sc->data[SC_RESIST_SC_COMA])
-					return 0;
 				if( val3 && bl->type == BL_MOB ) {
 					struct block_list* src2 = map->id2bl(val3);
 					if( src2 )
@@ -10496,6 +10494,8 @@ static bool status_is_immune_to_status(struct status_change *sc, enum sc_type ty
 			case SC__WEAKNESS:
 				return true;
 		}
+	} else if (sc->data[SC_RESIST_SC_COMA] && type == SC_COMA) {
+		return true;
 	}
 	return false;
 }
@@ -10594,15 +10594,16 @@ static int status_change_end_(struct block_list *bl, enum sc_type type, int tid,
 
 	if( sd && sce->infinite_duration && !sd->state.loggingout )
 		chrif->del_scdata_single(sd->status.account_id,sd->status.char_id,type);
-
+		
+	if (type == SC_RESIST_SC_COMA && sce->val1)
+	{
+		return 0;
+	}
 	if (tid == INVALID_TIMER) {
 		if (type == SC_ENDURE && sce->val4)
 			//Do not end infinite endure.
 				return 0;
-		if (type == SC_RESIST_SC_COMA && sce->val1)
-		{
-			return 0;
-		}
+		
 		if (sce->timer != INVALID_TIMER) //Could be a SC with infinite duration
 			timer->delete(sce->timer,status->change_timer);
 		if (sc->opt1)
