@@ -7412,6 +7412,8 @@ static int status_change_start_sub(struct block_list *src, struct block_list *bl
 	undead_flag = battle->check_undead(st->race, st->def_ele);
 	// Check for inmunities / sc fails
 	switch (type) {
+		case SC_RESIST_SC_COMA:
+			break;
 		case SC_DRUMBATTLE:
 		case SC_NIBELUNGEN:
 		case SC_INTOABYSS:
@@ -7691,6 +7693,8 @@ static int status_change_start_sub(struct block_list *src, struct block_list *bl
 	if( (sce = sc->data[type]) ) {
 		switch( type ) {
 			case SC_MER_FLEE:
+			case SC_RESIST_SC_COMA:
+				break;
 			case SC_MER_ATK:
 			case SC_MER_HP:
 			case SC_MER_SP:
@@ -8713,6 +8717,8 @@ static int status_change_start_sub(struct block_list *src, struct block_list *bl
 				break;
 			case SC_REBIRTH:
 				val2 = 20*val1; //% of life to be revived with
+				break;
+			case SC_RESIST_SC_COMA:
 				break;
 
 			case SC_MANU_DEF:
@@ -10488,6 +10494,8 @@ static bool status_is_immune_to_status(struct status_change *sc, enum sc_type ty
 			case SC__WEAKNESS:
 				return true;
 		}
+	} else if (sc->data[SC_RESIST_SC_COMA] && type == SC_COMA) {
+		return true;
 	}
 	return false;
 }
@@ -10586,11 +10594,16 @@ static int status_change_end_(struct block_list *bl, enum sc_type type, int tid,
 
 	if( sd && sce->infinite_duration && !sd->state.loggingout )
 		chrif->del_scdata_single(sd->status.account_id,sd->status.char_id,type);
-
+		
+	if (type == SC_RESIST_SC_COMA && sce->val1)
+	{
+		return 0;
+	}
 	if (tid == INVALID_TIMER) {
 		if (type == SC_ENDURE && sce->val4)
 			//Do not end infinite endure.
 				return 0;
+		
 		if (sce->timer != INVALID_TIMER) //Could be a SC with infinite duration
 			timer->delete(sce->timer,status->change_timer);
 		if (sc->opt1)
